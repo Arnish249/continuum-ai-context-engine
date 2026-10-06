@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Continuum | AI Context Continuity Engine</title>
+  <meta name="description" content="Continuum preserves critical reasoning context when conversations outlive their context window. Powered by Gemma 4.">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="theme-dark">
+  <div class="workspace-root">
+
+    <!-- Top Application Bar -->
+    <header class="top-nav" role="banner">
+      <div class="brand-group">
+        <div class="brand-logo" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="4"></circle>
+            <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line>
+            <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line>
+            <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line>
+            <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">CONTINUUM</span>
+          <span class="brand-tagline">Context Continuity Engine</span>
+        </div>
+      </div>
+
+      <!-- Center Status / Challenge Statement -->
+      <div class="nav-center-status">
+        <span class="challenge-pill" title="The Conversation That Outlives Its Context">
+          <span class="pill-dot"></span>
+          The Conversation That Outlives Its Context
+        </span>
+      </div>
+
+      <!-- Right Utility Bar -->
+      <div class="nav-controls">
+        <!-- Demo State Switcher for Audit & Testing -->
+        <div class="state-selector-wrap" title="Switch UI simulation states for review">
+          <label for="uiStateSelect" class="sr-only">Demo UI State</label>
+          <span class="select-label">UI State:</span>
+          <select id="uiStateSelect" class="state-select" aria-label="Demo UI state switcher">
+            <option value="normal">Normal (Smart Parking)</option>
+            <option value="empty">Empty Conversation</option>
+            <option value="loading">Loading / Reasoning</option>
+            <option value="error">Error Banner</option>
+            <option value="compressing">Compressing Package</option>
+          </select>
+        </div>
+
+        <!-- Gemma 4 Target Indicator -->
+        <div class="model-badge" title="Hard architectural model requirement: Gemma 4 strictly bound">
+          <span class="model-pip"></span>
+          <span class="model-name">Gemma 4</span>
+          <span class="model-detail">31B-IT</span>
+        </div>
+
+        <!-- Context Health Indicator -->
+        <div class="health-indicator" id="navHealthWidget" title="Durable context retention health estimate">
+          <span class="health-label">Context Health</span>
+          <span class="health-score" id="healthScoreVal">94%</span>
+          <span class="health-dot"></span>
+          <span class="demo-tag">Demo</span>
+        </div>
+
+        <!-- Mobile Drawer Toggle -->
+        <button id="toggleDrawerBtn" class="mobile-toggle-btn" aria-label="Toggle Context Engine panel" aria-expanded="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="15" y1="3" x2="15" y2="21"></line>
+          </svg>
+          <span class="toggle-count" id="mobileContextCount">5</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Error Banner (Conditional State) -->
+    <div id="globalAlertBanner" class="alert-banner hidden" role="alert">
+      <div class="alert-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div class="alert-text">
+        <strong>Demo Simulated Interruption:</strong> Raw context buffer limit reached. Continuum deterministic engine has safely preserved 5 structured items.
+      </div>
+      <button class="alert-close" id="dismissAlertBtn" aria-label="Dismiss alert">&times;</button>
+    </div>
+
+    <!-- Main 2-Column Work Area -->
+    <div class="workspace-body">
+
+      <!-- LEFT: Primary Conversation Area -->
+      <section class="conversation-pane" aria-label="Conversation with Gemma 4">
+        <!-- Conversation Sub-Header -->
+        <div class="conversation-header">
+          <div class="session-meta">
+            <h1 class="session-title">College Smart Parking System</h1>
+            <span class="session-badge">Active Session</span>
+            <span class="session-tokens" id="conversationTokenEstimate">~8,421 Tokens in Buffer</span>
+          </div>
+          <div class="session-actions">
+            <button id="btnResetDemo" class="btn-text" title="Reset sample conversation">Reset Demo</button>
+            <button id="btnToggleContextLink" class="btn-text active" title="Show extracted context links on messages">Show Context Anchors</button>
+          </div>
+        </div>
+
+        <!-- Messages Stream -->
+        <div class="message-stream" id="messageStream" role="log" aria-live="polite">
+          <!-- Populated by JS (Normal or Empty state) -->
+        </div>
+
+        <!-- Reasoning / Typing Indicator (State) -->
+        <div id="typingIndicator" class="typing-indicator hidden" aria-hidden="true">
+          <div class="typing-avatar">G4</div>
+          <div class="typing-bubble">
+            <span class="typing-label">Gemma 4 is reasoning over context...</span>
+            <div class="typing-dots">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conversation Composer -->
+        <div class="composer-container">
+          <form id="composerForm" class="composer-form" action="#" onsubmit="return false;">
+            <div class="composer-input-box">
+              <label for="messageInput" class="sr-only">Type message to Gemma 4</label>
+              <textarea 
+                id="messageInput" 
+                class="composer-textarea" 
+                rows="1" 
+                placeholder="Ask Gemma 4 or add specifications (e.g. 'Users must pay within 15 minutes')..."
+                aria-label="Message input"></textarea>
+              
+              <div class="composer-toolbar">
+                <div class="composer-hints">
+                  <span class="hint-tag" title="Text-only architecture. Vector DBs and file grounding disabled per Gemma 4 specification.">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="4" y1="9" x2="20" y2="9"></line>
+                      <line x1="4" y1="15" x2="20" y2="15"></line>
+                      <line x1="10" y1="3" x2="8" y2="21"></line>
+                      <line x1="16" y1="3" x2="14" y2="21"></line>
+                    </svg>
+                    Text Context Engine
+                  </span>
+                  <span class="key-hint">Press <kbd>Enter ↵</kbd> to send, <kbd>Shift + Enter</kbd> for newline</span>
+                </div>
+                <button type="submit" id="btnSendMessage" class="btn-send" aria-label="Send message">
+                  <span>Send</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </form>
+          <div class="composer-disclaimer">
+            Continuum deterministic memory layer automatically extracts and structures durable constraints from conversations.
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Context Engine Panel -->
+      <aside class="context-pane" id="contextPane" aria-label="Context Engine Panel">
+        <!-- Panel Header -->
+        <div class="context-panel-header">
+          <div class="context-title-group">
+            <div class="context-badge-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h2 class="context-heading">CONTEXT ENGINE</h2>
+              <span class="context-subheading">Durable Context Structured for Preservation</span>
+            </div>
+          </div>
+          <div class="context-header-stats">
+            <span class="active-badge" id="activeItemCount">5 Active</span>
+          </div>
+        </div>
+
+        <!-- Health & Retention Metric Strip -->
+        <div class="context-metric-strip">
+          <div class="metric-cell" title="Estimated survival rate during token compression">
+            <span class="metric-num text-cyan" id="retentionRateVal">94%</span>
+            <span class="metric-name">Durable Retention</span>
+          </div>
+          <div class="metric-cell" title="Total active extracted constraints & decisions">
+            <span class="metric-num text-white" id="trackedDecisionsVal">5</span>
+            <span class="metric-name">Tracked Items</span>
+          </div>
+          <div class="metric-cell" title="Active contradictions detected across turns">
+            <span class="metric-num text-emerald" id="activeConflictsVal">0</span>
+            <span class="metric-name">Conflicts</span>
+          </div>
+        </div>
+
+        <!-- Filter / Search Row -->
+        <div class="context-filter-row">
+          <div class="context-search-wrap">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="contextSearchInput" placeholder="Filter context items..." aria-label="Filter context items">
+          </div>
+          <span class="inspect-hint">Click item to inspect rationale</span>
+        </div>
+
+        <!-- Context Categories & Items Container -->
+        <div class="context-items-scroll" id="contextItemsContainer">
+          <!-- Dynamically populated by JS -->
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- Persistent Bottom Context Status Bar -->
+    <footer class="bottom-context-bar" role="region" aria-label="Context Package Status">
+      <div class="package-summary">
+        <div class="package-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+          </svg>
+        </div>
+        <div class="package-info">
+          <div class="package-title-line">
+            <span class="package-label">CONTEXT PACKAGE</span>
+            <span class="demo-tag">Demo Metric</span>
+            <span class="package-status-tag" id="packageStatusTag">Ready for Compression</span>
+          </div>
+          <div class="token-compression-stats">
+            <span class="token-raw" id="rawTokenCount">8,421 tokens</span>
+            <span class="compression-arrow">↓</span>
+            <span class="token-compressed" id="compTokenCount">1,183 preserved</span>
+            <span class="ratio-pill" id="compRatioPill">86% compression ratio</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compression Progress Bar (Active when compressing) -->
+      <div id="compressionProgressWrap" class="compression-progress-wrap hidden">
+        <div class="compression-progress-bar">
+          <div class="compression-progress-fill" id="compressionProgressFill"></div>
+        </div>
+        <span class="compression-progress-text" id="compressionProgressText">Compacting memory package...</span>
+      </div>
+
+      <div class="package-actions">
+        <button id="btnInspectPackage" class="btn btn-secondary" title="View compiled context package format">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <span>Inspect Package</span>
+        </button>
+        <button id="btnCompressContext" class="btn btn-primary" title="Compile and compress context package">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="4 14 10 14 10 20"></polyline>
+            <polyline points="20 10 14 10 14 4"></polyline>
+            <line x1="14" y1="10" x2="21" y2="3"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+          <span>Compress Context</span>
+        </button>
+        <button id="btnDestroyOriginal" class="btn btn-destroy" title="Remove original conversation — durable package survives" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6l-1 14H6L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+            <path d="M9 6V4h6v2"></path>
+          </svg>
+          <span>Destroy Original Context</span>
+        </button>
+      </div>
+
+      <!-- Destroy state indicator (hidden until destruction is triggered) -->
+      <div id="destroyStateBar" class="destroy-state-bar hidden">
+        <span class="destroy-state-badge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          ORIGINAL CONTEXT DESTROYED
+        </span>
+        <span class="destroy-state-sep">·</span>
+        <span class="destroy-state-preserved">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          DURABLE CONTEXT PRESERVED
+        </span>
+      </div>
+    </footer>
+
+    <!-- Context Item Inspector Modal / Drawer -->
+    <div id="inspectorBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="inspector-drawer" role="dialog" aria-modal="true" aria-labelledby="inspectorTitle">
+        <div class="drawer-header">
+          <div class="drawer-header-left">
+            <span class="drawer-kicker">CONTEXT ITEM INSPECTOR</span>
+            <h3 id="inspectorTitle" class="drawer-title">Why Was This Retained?</h3>
+          </div>
+          <button id="btnCloseInspector" class="btn-close" aria-label="Close inspector modal">&times;</button>
+        </div>
+
+        <div class="drawer-body" id="inspectorBody">
+          <!-- Dynamically populated -->
+        </div>
+
+        <div class="drawer-footer">
+          <span class="drawer-hint">Deterministic memory item maintained by Continuum application engine.</span>
+          <button id="btnCloseInspectorBottom" class="btn btn-secondary">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Context Package Inspector Modal -->
+    <div id="packageBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="package-modal" role="dialog" aria-modal="true" aria-labelledby="packageModalTitle">
+        <div class="drawer-header">
+          <div class="drawer-header-left">
+            <span class="drawer-kicker">COMPILED CONTEXT PACKAGE</span>
+            <h3 id="packageModalTitle" class="drawer-title">Durable Continuity Envelope</h3>
+          </div>
+          <button id="btnClosePackageModal" class="btn-close" aria-label="Close package modal">&times;</button>
+        </div>
+        <div class="package-modal-body">
+          <div class="package-explainer">
+            This structured package replaces the raw 8,421-token conversation history when injected into subsequent Gemma 4 turns, preserving 100% of critical decisions within a 1,183-token footprint.
+          </div>
+          <div class="package-code-viewer">
+            <pre><code id="packageCodeViewer">Loading compiled context package...</code></pre>
+          </div>
+        </div>
+        <div class="drawer-footer">
+          <span class="drawer-hint">Schema verified for Gemma 4 prompt injection.</span>
+          <button id="btnClosePackageBottom" class="btn btn-secondary">Close</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/app.js" type="module"></script>
+</body>
+</html>
